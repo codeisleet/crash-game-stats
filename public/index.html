@@ -80,19 +80,26 @@
     <div backgroundColor="white" style="margin: 0 auto; display: block; width: 1600px; height: 225px; text-align: center;"> <img src="images/logo.jpg" alt=""></div>
     
     
-    <div  backgroundColor="red"  id="main-div" style="background-color: white; text-align: center; align-items: center; margin: 0 auto;display: block;  font-weight: 999; font-family: monospace; width: 1600px; height: 530px; border: 2px solid black; font-size: 14px; margin-top: 20px; ">
-        <div style=" text-align: center; height: 40px; width: 820px; margin: 0 auto; margin-top: 5px; border: 2px dashed gray; display: block; padding: 0 auto;"><button style="font-size: larger;" id="hash-btn">Get Last Stats</button> <input style="margin: 0 auto; margin-top: 5px; width: 640px; font-size: large;" type="text" id="last-hash" value="" placeholder="Enter The Last Hash HERE"></div>   
+    <div  backgroundColor="red"  id="main-div" style="background-color: white; text-align: center; align-items: center; margin: 0 auto;display: block;  font-weight: 999; font-family: monospace; width: 1600px; height: 570px; border: 2px solid black; font-size: 14px; margin-top: 20px; ">
+        <div style=" text-align: center; height: 40px; width: 820px; margin: 0 auto; margin-top: 5px; border: 2px dashed gray; display: block; padding: 0 auto;"><button style="font-size: larger;" id="hash-btn">Get Last Stats</button> <input style="margin: 0 auto; margin-top: 5px; width: 640px; font-size: large;" type="text" id="last-hash" value="748ef35c27e4bb817b65ec441c464e9d405a0207bb9e801d2b14d37e57759457" placeholder="Enter The Last Hash HERE"></div>   
         
         <div style="text-align: center;" id="info1"></div>
-        <div id="left-data"  style=" padding-right: 20px; text-align: right; width: 430px;display: inline-block;"></div>
+
+
+
+
+
+        <div id="left-data"  style="font-size: 15px; vertical-align: middle; text-align: right; width: 460px;display: inline-block;"></div>
         
-        <div id="right-data" style=" padding-left: 20px; margin-block-end: 0; margin-block-start: 0;  width: 1110px;display: inline-block;">
-            
+        <div id="right-data" style="vertical-align: middle; width: 1080px; display: inline-block;">
+            <canvas width="1080px" height="400px" style="margin: 0 auto; height: 95%; width: 95%" id="lastGamesChart"></canvas>
         </div>
+
+
+
         <p id="hash-disclaimer"></p>
         
     </div>
-    
     
     <div  backgroundColor="white" style="background-color: white; width: 1600px; height: 1200px; position: static; border: 2px solid black; margin: 0 auto; margin-top: 15px; padding: 0px; text-align: center;">
         
@@ -100,7 +107,7 @@
             <p  > <strong> * Bankroll starts at 0 and could be a negative value. Initial Bet is 1. After win the bet is reset!</strong> <input style="visibility: hidden;" type="number" id="initial-bankroll" value="100"  placeholder="100" >   </p>
             <p>CashOut Point: <input type="number" value="3.65" placeholder="3.65" id="cash-out-on">  </p>
             <p>ON LOSS Multiply by: <input type="number" id="on-loss-multiplier" value="1.38" placeholder="1.38"> </p>                    
-            <button id="chart-btn" style=" margin: 0 auto; display: relative;"> Generate Projection </button>
+            <button id="chart-btn" style=" margin: 0 auto; display: block;"> Generate Projection </button>
             <p style="color: red;">Hash: <i>748ef35c27e4bb817b65ec441c464e9d405a0207bb9e801d2b14d37e57759457</i> - <strong> Sat, Jun 18, 2022 8:16 PM </strong>  </p>
         </div>
         
@@ -115,7 +122,7 @@
             
             $('#hash-btn').click(function(){
                 let hashVal = $('#last-hash').val();
-                displayRecentStats(hashVal);
+                displayRecentStats2(hashVal);
             });
             
             $('#chart-btn').click(function(){
@@ -141,16 +148,23 @@
         async function resetHashFrame(){
             await $('#info1').html("");
             await $('#left-data').html("");
+            if(Chart.getChart('lastGamesChart')){
+                Chart.getChart('lastGamesChart').destroy();
+            }
             await $('#right-data').html("");
             await $('#hash-disclaimer').html("");
         }
         
+        
+        
         async function displayRecentStats2(hashValue) {
+            
             await resetHashFrame();
+            await $('#right-data').html('<canvas width="1110px" height="400px" style="margin: 0 auto; height: 95%; width: 100%" id="lastGamesChart"></canvas>');
             
             const disclaimer = "* There might be a slight discrepancy in the ones. Overall the ratio is the same. Blame the souce code, provided by the site!";
             // const iss_url = "https://api.wheretheiss.at/v1/satellites";
-            const getHashStatsEndpoint = "http://nftbulgaria.info:34567/hash/";
+            const getHashStatsEndpoint = "http://localhost:34567/hash/";
             
             
             console.log("HASH " + hashValue);
@@ -173,12 +187,118 @@
                 left.innerHTML = await row[0];
                 // right.innerHTML = await row[1];
                 console.log("" + i + " " + left);
-                console.log(right);
+                //  console.log(right);
                 
                 await left_div.appendChild(left);
                 // await right_div.appendChild(right);
             }
             
+            const ctx = await document.getElementById('lastGamesChart').getContext('2d');
+            const lastGamesStatsEndpoint = await "http://localhost:34567/hash-chart/" + hashValue;
+            const lastStatsData = await fetch(lastGamesStatsEndpoint);
+            const lastStatsDataJson = await lastStatsData.json();
+            
+            const chartData = await {
+                labels: lastStatsDataJson.gameIds,
+                datasets: [{
+                    label: "Crash Statistics - last 100 games ",
+                    data: lastStatsDataJson.weights
+                }]
+            }
+            
+            const doubleUpPointColor = (ctx) => ctx.parsed.y >= 0 ? 'green' : 'red';
+            let res = await "";
+            
+            for (let index = 0; index < 100; index++) {
+                res += await " " + index + " - " + lastStatsDataJson.weights[index] + ", " + lastStatsDataJson.crashPoints[index] + " | ";
+                
+            }
+            console.log("All the values: " + res)
+            
+            const weightToCrashPointMap = await ['1.00', '1.20', '1.40', '1.60', '1.80','2.00', '2.50', '3.33', '5.00', '10.00', '50.00'];
+            const myChart = await new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    elements: {
+                        bar: {
+                            backgroundColor: ctx => doubleUpPointColor(ctx),
+                            borderColor: ctx => doubleUpPointColor(ctx),
+                            borderWidth: 1
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'x',
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => "CrashPoint: " + lastStatsDataJson.crashPoints[ctx.dataIndex] 
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            left: 0,
+                            right: 0,
+                            type: 'linear',
+                            position: 'left',
+                            grid: {
+                                display: true,
+                                drawBorder: true,
+                                drawOnChartArea: true,
+                                drawTicks: true,
+                            },
+                            min: 5,
+                            max: 96,
+                            ticks: {
+                                padding: 0,
+                                callback: function(val, index) {
+                                    return index == 0 || index == 10 ? "" : val;
+                                }
+                            },
+                            paddingLeft: 0,
+                            paddingRight: 0,
+                            margins: {
+                                left: 0,
+                                right: 0
+                            }
+                        },
+                        y: {
+                            display: true,
+                            type: 'linear',
+                            min: -50,
+                            max: 50,
+                            grid: {
+                                display: true,
+                                drawBorder: true,
+                                drawOnChartArea: true,
+                                drawTicks: true,
+                                color: function(context) {
+                                    if (context.tick.value > 0) {
+                                        return 'green';
+                                    } else if (context.tick.value < 0) {
+                                        return 'red';
+                                    }
+                                    return '#000000';
+                                },
+                            },
+                            ticks: {
+                                callback: function(val, index) {
+                                    return weightToCrashPointMap[index];
+                                }
+                            },
+                            paddingLeft: 0,
+                            paddingRight: 0,
+                            margins: {
+                                left: 0,
+                                right: 0
+                            }
+                        }
+                    }
+                }
+            });
             
             
             await $('#hash-disclaimer').text(disclaimer);
@@ -190,7 +310,7 @@
             
             const disclaimer = "* There might be a slight discrepancy in the ones. Overall the ratio is the same. Blame the souce code, provided by the site!";
             // const iss_url = "https://api.wheretheiss.at/v1/satellites";
-            const getHashStatsEndpoint = "http://nftbulgaria.info:34567/hash/";
+            const getHashStatsEndpoint = "http://localhost:34567/hash/";
             
             
             console.log("HASH " + hashValue);
@@ -218,28 +338,28 @@
                 await left_div.appendChild(left);
                 await right_div.appendChild(right);
             }
-            
             await $('#hash-disclaimer').text(disclaimer);
-            
         }
         
+        
+        
+        
         async function displayBalanceProjection() {
-           
-            const positiveBankroll = (ctx) => ctx.p1.parsed.y > 0 ? 'green' : 'red';
             
-            await $('canvas#myChart').remove();
+            const positiveBankroll = (ctx) => ctx.p0.parsed.y > ctx.p1.parsed.y ? 'red' : 'green';
             
-            await $('div#chart-holder').html('<canvas width="1500px" style="margin: 0 auto; width: 90%" id="myChart"></canvas>');
+            if(Chart.getChart('myChart')) {
+                Chart.getChart('myChart').destroy();
+            }
             
             const ctx = await document.getElementById('myChart').getContext('2d');
             const crashStast = await getProfitProjectionData();
             
-            let labelStr = await 'Projection for 100k games played. Refresh rate: 50 games(2000 frames/points)! Final Balance: '+ crashStast.balance[crashStast.balance.length -1] + "";
+            const labelStr = await 'Final Balance: '+ crashStast.balance[crashStast.balance.length -1] + "";
+            const xAxisTitle = await 'Projection for 100k games played. Refresh rate: 100 games, 1000 data-points!' 
             
             await console.log(crashStast);
-            const myChart = await new Chart(ctx, 
-            ```chart
-            {
+            const myChart = await new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: crashStast.games,
@@ -256,34 +376,47 @@
                     }]
                 },
                 options: {
-                    fill: true,
+                    //parsing: false,
                     interaction: {
+                        mode: 'index',
+                        axis: 'xy',
                         intersect: false
                     },
-                    radius: 0,
-                },
-                scales: {
-                    y: {
-                        sugges
+                    plugins: {
+                        //plugins
+                    },
+                    scales: {
+                        y: {
+                            suggestedMin: -10,
+                            suggestedMax: 10
+                        },
+                        x: {
+                            type: 'linear',
+                            display: true,
+                            title: {
+                                display: true,
+                                text: xAxisTitle,
+                                color: '#911',
+                                font: {
+                                    family: 'Comic Sans MS',
+                                    size: 20,
+                                    weight: 'bold',
+                                    lineHeight: 1.2,
+                                },
+                                padding: {top: 20, left: 0, right: 0, bottom: 0}
+                            }
+                        }
                     }
-                }
+                    
+                }});    
             }
-            ```
-            
-            );
             
             async function getProfitProjectionData() {
                 
-                const endpoint = "http://nftbulgaria.info:34567";
-                
+                const endpoint = "http://localhost:34567";
                 
                 let cashOutOn = await $('#cash-out-on').val();   //3.65;
                 await console.log("cash out: " + cashOutOn);
-                //                     let resetOnWin = await true;
-                // await console.log("on win reset switch: " + resetOnWin);
-                //                     let winMultiplier = await resetOnWin ? 1 : 1.65;
-                
-                //                     let resetOnLoss = await false;
                 
                 let lossMultiplier = await $('#on-loss-multiplier').val();  // 1.38;
                 await console.log("loss multipier: " + lossMultiplier);      
@@ -299,7 +432,7 @@
                 console.log("responseData = " + responseDataJson);
                 return responseDataJson ;
             }
-        }
+            
         </script>
         
     </body>

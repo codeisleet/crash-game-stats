@@ -15,7 +15,7 @@ function displayStats(crashHash){
     //the initial hash - passed as arg from tty
     const myArgHash = process.argv.slice(2);
     //Count of games to be displayed
-    const lastNGames = 120  ;
+    const lastNGames = 100;
     
 
     // actual values of crash points
@@ -31,29 +31,30 @@ function displayStats(crashHash){
     finalResult.push("Last Hash: " + crashHash);
     finalResult.push("Last 20 Values: " + result);
 
-
     finalResult.push(visualize(lastNGames, 50, crashHash));
     finalResult.push("   ");
     finalResult.push(visualize(lastNGames, 10, crashHash));
     finalResult.push("   ");
     finalResult.push( visualize(lastNGames, 5, crashHash));
     finalResult.push("   ");
-    finalResult.push( visualize(lastNGames, 3, crashHash));
+    finalResult.push( visualize(lastNGames, 3.33, crashHash));
+    finalResult.push("   ");
+    finalResult.push( visualize(lastNGames, 2.5, crashHash));
     finalResult.push("   ");
     finalResult.push(visualize(lastNGames, 2, crashHash));
     finalResult.push("   ");
   
     finalResult.push(visualize(lastNGames, 1.99, crashHash));
     finalResult.push("   ");
-    finalResult.push(visualize(lastNGames, 1.66, crashHash));
+    finalResult.push(visualize(lastNGames, 1.8, crashHash));
     finalResult.push("   ");
-    finalResult.push( visualize(lastNGames, 1.50, crashHash));
+    finalResult.push( visualize(lastNGames, 1.6, crashHash));
     finalResult.push("   ");
-    finalResult.push(visualize(lastNGames, 1.33, crashHash));
+    finalResult.push(visualize(lastNGames, 1.4, crashHash));
     // finalResult.push("   ");
     // finalResult.push(visualize(lastNGames, 1.2, crashHash));
     finalResult.push("   ");
-    finalResult.push(visualize(lastNGames, 1.1, crashHash));
+    finalResult.push(visualize(lastNGames, 1.2, crashHash));
     finalResult.push("   ");
 
     // console.log('Args: ', myArgHash);
