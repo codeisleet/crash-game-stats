@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>RooCrash PlayGround</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script> 
+    
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 37px;
+            height: 20px;
+        }
+        
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 15px;
+            width: 15px;
+            left: 4px;
+            bottom: 2px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+        
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+        
+        input:checked + .slider:before {
+            -webkit-transform: translateX(15px);
+            -ms-transform: translateX(15px);
+            transform: translateX(15px);
+        }
+        
+    </style>
+    
+    <style>
+        body {
+            background-image: url('images/bg.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+        }
+        
+        
+    </style>
+    
+</head>
+<body >
+    
+    <div backgroundColor="white" style="margin: 0 auto; display: block; width: 1600px; height: 225px; text-align: center;"> <img src="images/logo.jpg" alt=""></div>
+    
+    
+    <div  backgroundColor="red"  id="main-div" style="background-color: white; text-align: center; align-items: center; margin: 0 auto;display: block;  font-weight: 999; font-family: monospace; width: 1600px; height: 530px; border: 2px solid black; font-size: 14px; margin-top: 20px; ">
+        <div style=" text-align: center; height: 40px; width: 820px; margin: 0 auto; margin-top: 5px; border: 2px dashed gray; display: block; padding: 0 auto;"><button style="font-size: larger;" id="hash-btn">Get Last Stats</button> <input style="margin: 0 auto; margin-top: 5px; width: 640px; font-size: large;" type="text" id="last-hash" value="" placeholder="Enter The Last Hash HERE"></div>   
+        
+        <div style="text-align: center;" id="info1"></div>
+        <div id="left-data"  style=" padding-right: 20px; text-align: right; width: 430px;display: inline-block;"></div>
+        
+        <div id="right-data" style=" padding-left: 20px; margin-block-end: 0; margin-block-start: 0;  width: 1110px;display: inline-block;">
+            
+        </div>
+        <p id="hash-disclaimer"></p>
+        
+    </div>
+    
+    
+    <div  backgroundColor="white" style="background-color: white; width: 1600px; height: 1200px; position: static; border: 2px solid black; margin: 0 auto; margin-top: 15px; padding: 0px; text-align: center;">
+        
+        <div style="width: 1000px; height: 210px; border: 3px solid black; display: block; position: static; margin: 0 auto; margin-top: 5px;">
+            <p  > <strong> * Bankroll starts at 0 and could be a negative value. Initial Bet is 1. After win the bet is reset!</strong> <input style="visibility: hidden;" type="number" id="initial-bankroll" value="100"  placeholder="100" >   </p>
+            <p>CashOut Point: <input type="number" value="3.65" placeholder="3.65" id="cash-out-on">  </p>
+            <p>ON LOSS Multiply by: <input type="number" id="on-loss-multiplier" value="1.38" placeholder="1.38"> </p>                    
+            <button id="chart-btn" style=" margin: 0 auto; display: relative;"> Generate Projection </button>
+            <p style="color: red;">Hash: <i>748ef35c27e4bb817b65ec441c464e9d405a0207bb9e801d2b14d37e57759457</i> - <strong> Sat, Jun 18, 2022 8:16 PM </strong>  </p>
+        </div>
+        
+        <div id="chart-holder" style="width: 1500px; height: 950px; border: 3px solid black; display: block; position: static; margin: 0 auto; margin-top: 5px;">
+            <canvas width="1500px" style="margin: 0 auto; width: 90%" id="myChart"></canvas>
+        </div>
+        
+    </div>
+    
+    <script>
+        $(document).ready(function(){    
+            
+            $('#hash-btn').click(function(){
+                let hashVal = $('#last-hash').val();
+                displayRecentStats(hashVal);
+            });
+            
+            $('#chart-btn').click(function(){
+                displayBalanceProjection(myChart);
+            });
+            
+            $('#on-win-reset-switch').click(function(){
+                $('#on-win-reset-switch').checked = !($('#on-win-reset-switch').checked);
+            });
+            
+            $('#on-loss-reset-switch').click(function(){
+                $('#on-loss-reset-switch').checked = !($('#on-loss-reset-switch').checked);
+            });
+            
+        });
+        
+        async function colorizeProfit() {
+            return (ctx) => {
+                return ctx.parsed.y < 0 ? 'red' : 'green';//'#D60000' : '#44DE28';
+            };
+        }
+        
+        async function resetHashFrame(){
+            await $('#info1').html("");
+            await $('#left-data').html("");
+            await $('#right-data').html("");
+            await $('#hash-disclaimer').html("");
+        }
+        
+        async function displayRecentStats2(hashValue) {
+            await resetHashFrame();
+            
+            const disclaimer = "* There might be a slight discrepancy in the ones. Overall the ratio is the same. Blame the souce code, provided by the site!";
+            // const iss_url = "https://api.wheretheiss.at/v1/satellites";
+            const getHashStatsEndpoint = "http://nftbulgaria.info:34567/hash/";
+            
+            
+            console.log("HASH " + hashValue);
+            let toCall = await (getHashStatsEndpoint + hashValue);
+            const data = await fetch(toCall);
+            const dataJson = await data.json();
+            
+            await console.log("JSON DATA: ");
+            await console.log(dataJson);
+            
+            var left_div = await document.getElementById('left-data');
+            var right_div = await document.getElementById('right-data');
+            document.getElementById('info1').innerHTML = await ("<p>" + dataJson[0] + "</p><p>"+ dataJson[1] + "</p>");
+            
+            for(let i = 2; i < dataJson.length;i++){
+                let row = await ("" + dataJson[i]).split("|");
+                if(row.length != 2) continue;
+                let left = await document.createElement('p');
+                //let right = await document.createElement('p');
+                left.innerHTML = await row[0];
+                // right.innerHTML = await row[1];
+                console.log("" + i + " " + left);
+                console.log(right);
+                
+                await left_div.appendChild(left);
+                // await right_div.appendChild(right);
+            }
+            
+            
+            
+            await $('#hash-disclaimer').text(disclaimer);
+            
+        }
+        
+        async function displayRecentStats(hashValue) {
+            await resetHashFrame();
+            
+            const disclaimer = "* There might be a slight discrepancy in the ones. Overall the ratio is the same. Blame the souce code, provided by the site!";
+            // const iss_url = "https://api.wheretheiss.at/v1/satellites";
+            const getHashStatsEndpoint = "http://nftbulgaria.info:34567/hash/";
+            
+            
+            console.log("HASH " + hashValue);
+            let toCall = await (getHashStatsEndpoint + hashValue);
+            const data = await fetch(toCall);
+            const dataJson = await data.json();
+            
+            await console.log("JSON DATA: ");
+            await console.log(dataJson);
+            
+            var left_div = await document.getElementById('left-data');
+            var right_div = await document.getElementById('right-data');
+            document.getElementById('info1').innerHTML = await ("<p>" + dataJson[0] + "</p><p>"+ dataJson[1] + "</p>");
+            
+            for(let i = 2; i < dataJson.length;i++){
+                let row = await ("" + dataJson[i]).split("|");
+                if(row.length != 2) continue;
+                let left = await document.createElement('p');
+                let right = await document.createElement('p');
+                left.innerHTML = await row[0];
+                right.innerHTML = await row[1];
+                console.log("" + i + " " + left);
+                console.log(right);
+                
+                await left_div.appendChild(left);
+                await right_div.appendChild(right);
+            }
+            
+            await $('#hash-disclaimer').text(disclaimer);
+            
+        }
+        
+        async function displayBalanceProjection() {
+           
+            const positiveBankroll = (ctx) => ctx.p1.parsed.y > 0 ? 'green' : 'red';
+            
+            await $('canvas#myChart').remove();
+            
+            await $('div#chart-holder').html('<canvas width="1500px" style="margin: 0 auto; width: 90%" id="myChart"></canvas>');
+            
+            const ctx = await document.getElementById('myChart').getContext('2d');
+            const crashStast = await getProfitProjectionData();
+            
+            let labelStr = await 'Projection for 100k games played. Refresh rate: 50 games(2000 frames/points)! Final Balance: '+ crashStast.balance[crashStast.balance.length -1] + "";
+            
+            await console.log(crashStast);
+            const myChart = await new Chart(ctx, 
+            ```chart
+            {
+                type: 'line',
+                data: {
+                    labels: crashStast.games,
+                    datasets: [
+                    {
+                        label: labelStr,
+                        data: crashStast.balance,
+                        backgroundColor: 'rgb(255, 255, 255, 0.1)',
+                        borderColor: 'rgb(255, 255, 255, 0.1)',          
+                        segment: {
+                            borderColor: ctx => positiveBankroll(ctx)
+                        },
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    fill: true,
+                    interaction: {
+                        intersect: false
+                    },
+                    radius: 0,
+                },
+                scales: {
+                    y: {
+                        sugges
+                    }
+                }
+            }
+            ```
+            
+            );
+            
+            async function getProfitProjectionData() {
+                
+                const endpoint = "http://nftbulgaria.info:34567";
+                
+                
+                let cashOutOn = await $('#cash-out-on').val();   //3.65;
+                await console.log("cash out: " + cashOutOn);
+                //                     let resetOnWin = await true;
+                // await console.log("on win reset switch: " + resetOnWin);
+                //                     let winMultiplier = await resetOnWin ? 1 : 1.65;
+                
+                //                     let resetOnLoss = await false;
+                
+                let lossMultiplier = await $('#on-loss-multiplier').val();  // 1.38;
+                await console.log("loss multipier: " + lossMultiplier);      
+                
+                let initialBankroll = await $('#initial-bankroll').val(); //100
+                await console.log("initial Bankroll: " + initialBankroll);     
+                
+                const finalUrl = await endpoint + "/lossMultiplier/" + lossMultiplier + "/cashOutOn/" + cashOutOn + "/initialBankroll/" + initialBankroll;
+                
+                const responseData = await fetch(finalUrl);
+                const responseDataJson = await responseData.json();
+                
+                console.log("responseData = " + responseDataJson);
+                return responseDataJson ;
+            }
+        }
+        </script>
+        
+    </body>
+    </html>
