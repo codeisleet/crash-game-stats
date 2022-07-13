@@ -49,7 +49,7 @@ module.exports = class MyQueue {
     }
 
     isTableHot(){
-      return  roo.ratiosForCrashPoint.get("" + this.cashOutPoint) < this.queueSize / this.elementsOverCashoutPoint - 1;
+      return  this.elementsOverCashoutPoint < this.queueSize / this.cashOutPoint;
     }
 
     get length() {

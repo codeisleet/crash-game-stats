@@ -39,6 +39,16 @@ function crashPointFromHash(serverSeed) {
     return Math.floor((100 * e - h) / (e - h)) / 100.0;
 }
 
+
+
+
+
+
+
+
+
+
+
 // agv values
 
 var ratiosForCrashPoint = new Map(
